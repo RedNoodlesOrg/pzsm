@@ -1,0 +1,8 @@
+{{define "mod_toggle"}}<button
+  type="button"
+  class="pz-switch{{if .Enabled}} is-on{{end}}"
+  aria-pressed="{{if .Enabled}}true{{else}}false{{end}}"
+  aria-label="toggle {{.ID}}"
+  hx-post="/cmd/mod/{{.WorkshopID}}/{{.ID}}/toggle"
+  hx-target="this"
+  hx-swap="outerHTML"><span class="pz-switch-track"></span></button>{{end}}

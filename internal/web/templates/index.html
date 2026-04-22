@@ -1,0 +1,50 @@
+{{define "title"}}mods -- pzsm{{end}}
+
+{{define "content"}}
+<div class="pz-page-head">
+  <div>
+    <h1>mods</h1>
+    <p class="pz-page-meta">
+      <strong>{{len .Mods}}</strong> in collection
+      {{with .CollectionID}} &middot; <strong>{{.}}</strong>{{end}}
+    </p>
+  </div>
+  <div class="pz-actions">
+    <button class="pz-btn pz-btn-primary"
+            hx-post="/cmd/sync"
+            hx-target="#mods"
+            hx-swap="outerHTML"
+            hx-indicator="this">
+      sync collection
+    </button>
+    <button class="pz-btn"
+            hx-post="/cmd/applymods"
+            hx-swap="none">
+      apply to server
+    </button>
+    <button class="pz-btn pz-btn-danger" disabled title="slice 4">restart</button>
+  </div>
+</div>
+
+{{template "mod_grid" .}}
+{{end}}
+
+{{define "mod_grid"}}
+<section id="mods">
+  {{if .Mods}}
+  <div class="pz-grid">
+    {{range .Mods}}{{template "mod_card" .}}{{end}}
+  </div>
+  {{else}}
+  <div class="pz-empty">
+    <p>no mods yet. sync the collection to populate.</p>
+    <button class="pz-btn pz-btn-primary"
+            hx-post="/cmd/sync"
+            hx-target="#mods"
+            hx-swap="outerHTML">
+      sync collection
+    </button>
+  </div>
+  {{end}}
+</section>
+{{end}}

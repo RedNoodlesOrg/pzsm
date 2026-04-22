@@ -1,0 +1,350 @@
+/*
+ * Tideline -- standalone tokens
+ * For plain HTML, prototypes, landing pages, or any non-PatternFly surface.
+ * For PF6 projects, use tokens/tideline-pf6.css instead.
+ *
+ * Assumes IBM Plex Sans / Serif / Mono are loaded by the host (see fonts.css).
+ */
+
+:root {
+  /* ========== Neutrals -- tidal column ========== */
+  --tl-abyss:    #030F12;
+  --tl-trench:   #0A1A1E;
+  --tl-depths:   #112528;
+  --tl-current:  #1E3438;
+  --tl-tide:     #324749;
+  --tl-horizon:  #4A6366;
+  --tl-mist:     #6C878B;
+  --tl-fog:      #97ADB1;
+  --tl-breeze:   #BFD1D4;
+  --tl-sea-salt: #DCE7E9;
+  --tl-foam:     #EEF4F5;
+
+  /* ========== Ocean -- primary ========== */
+  --tl-ocean-50:  #DCF0F2;
+  --tl-ocean-100: #B2E0E4;
+  --tl-ocean-200: #7BC8CE;
+  --tl-ocean-400: #2F9BA4;
+  --tl-ocean-500: #1A6971;
+  --tl-ocean-700: #0D454B;
+  --tl-ocean-900: #062428;
+
+  /* ========== Tsunami -- intensity pivot ========== */
+  --tl-tsunami-50:  #D8F2F3;
+  --tl-tsunami-100: #A4E1E3;
+  --tl-tsunami-200: #6ACAD0;
+  --tl-spray:       #3DB2B8;  /* tsunami 400 */
+  --tl-crest:       #1F8E95;  /* tsunami 500 */
+  --tl-tsunami:     #0E5A60;  /* tsunami 700 */
+  --tl-tsunami-900: #052B2F;
+
+  /* ========== Kelp -- success ========== */
+  --tl-kelp-50:  #E4F2EA;
+  --tl-kelp-100: #BDDECA;
+  --tl-kelp-200: #92C9A8;
+  --tl-kelp-400: #3E9A68;
+  --tl-kelp-500: #2B7F52;
+  --tl-kelp-700: #154A30;
+  --tl-kelp-900: #082316;
+
+  /* ========== Sun -- warning ========== */
+  --tl-sun-50:  #F9EEDA;
+  --tl-sun-100: #EFD39C;
+  --tl-sun-200: #E5B75C;
+  --tl-sun-400: #D29A2E;
+  --tl-sun-500: #B27C1D;
+  --tl-sun-700: #7A5310;
+  --tl-sun-900: #3E2A06;
+
+  /* ========== Undertow -- danger ========== */
+  --tl-undertow-50:  #FAE8E8;
+  --tl-undertow-100: #F0BCBE;
+  --tl-undertow-200: #E48D90;
+  --tl-undertow-400: #D04E55;
+  --tl-undertow-500: #B23840;
+  --tl-undertow-700: #7E232B;
+  --tl-undertow-900: #421218;
+
+  /* ========== Ink -- special / rare ========== */
+  --tl-ink-50:  #EEE4F6;
+  --tl-ink-100: #D4BCE9;
+  --tl-ink-200: #B993D8;
+  --tl-ink-400: #8D5CBE;
+  --tl-ink-500: #6F40A0;
+  --tl-ink-700: #4C2B70;
+  --tl-ink-900: #261639;
+
+  /* ========== Typography ========== */
+  --tl-font-sans:  "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --tl-font-serif: "IBM Plex Serif", ui-serif, Georgia, "Times New Roman", serif;
+  --tl-font-mono:  "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+
+  --tl-size-xs:   12px;
+  --tl-size-sm:   14px;
+  --tl-size-base: 16px;
+  --tl-size-md:   18px;
+  --tl-size-lg:   22px;
+  --tl-size-xl:   28px;
+  --tl-size-2xl:  36px;
+  --tl-size-3xl:  48px;
+  --tl-size-4xl:  64px;
+  --tl-size-5xl:  88px;
+
+  --tl-weight-regular: 400;
+  --tl-weight-medium:  500;
+  /* 300 italic only appears on the wordmark and .tl-display class */
+
+  --tl-leading-display: 1.1;
+  --tl-leading-heading: 1.25;
+  --tl-leading-body:    1.5;
+  --tl-leading-dense:   1.35;
+
+  --tl-tracking-tight: -0.02em;
+  --tl-tracking-snug:  -0.01em;
+  --tl-tracking-wide:   0.1em;
+  --tl-tracking-eyebrow: 0.14em;
+
+  /* ========== Spacing -- 4px base ========== */
+  --tl-space-1:  4px;
+  --tl-space-2:  8px;
+  --tl-space-3:  12px;
+  --tl-space-4:  16px;
+  --tl-space-5:  24px;
+  --tl-space-6:  32px;
+  --tl-space-7:  48px;
+  --tl-space-8:  64px;
+  --tl-space-9:  96px;
+  --tl-space-10: 128px;
+
+  /* ========== Borders & radii -- sharp ========== */
+  --tl-border-thin:  1px;
+  --tl-border-thick: 2px;
+
+  --tl-radius-xs:   2px;   /* tags, chips, subtle */
+  --tl-radius-sm:   4px;   /* buttons, inputs */
+  --tl-radius-md:   8px;   /* cards, panels */
+  --tl-radius-lg:  16px;   /* marketing hero surfaces only */
+  --tl-radius-pill: 999px; /* used rarely */
+
+  /* ========== Motion ========== */
+  --tl-dur-fast: 120ms;
+  --tl-dur-base: 200ms;
+  --tl-dur-slow: 400ms;
+
+  --tl-ease-tide:  cubic-bezier(0.33, 0.1, 0.2, 1);  /* state changes */
+  --tl-ease-swell: cubic-bezier(0.6, 0, 0.2, 1);     /* entrances / exits */
+
+  /* ========== Shadows (used sparingly) ========== */
+  --tl-shadow-depth-1: 0 1px 0 rgba(3,15,18,0.35), 0 1px 2px rgba(3,15,18,0.2);
+  --tl-shadow-depth-2: 0 2px 4px rgba(3,15,18,0.35), 0 4px 12px rgba(3,15,18,0.3);
+  --tl-shadow-depth-3: 0 6px 16px rgba(3,15,18,0.45), 0 16px 40px rgba(3,15,18,0.35);
+
+  /* Focus ring: always crest. Inset abyss so the ring reads against any accent. */
+  --tl-focus-ring: 0 0 0 2px var(--tl-abyss), 0 0 0 4px var(--tl-crest);
+}
+
+/* ========== Semantic roles -- dark (default) ========== */
+:root, [data-theme="dark"] {
+  --bg:             var(--tl-abyss);
+  --bg-surface:     var(--tl-trench);
+  --bg-elevated:    var(--tl-depths);
+  --bg-hover:       var(--tl-current);
+  --bg-inverse:     var(--tl-foam);
+
+  --border:         var(--tl-tide);
+  --border-subtle:  var(--tl-current);
+  --border-strong:  var(--tl-horizon);
+
+  --text:           var(--tl-sea-salt);
+  --text-muted:     var(--tl-fog);
+  --text-subtle:    var(--tl-mist);
+  --text-inverse:   var(--tl-trench);
+
+  --accent:         var(--tl-ocean-400);
+  --accent-intense: var(--tl-spray);
+  --accent-soft:    var(--tl-ocean-900);
+
+  --success:        var(--tl-kelp-400);
+  --warning:        var(--tl-sun-400);
+  --danger:         var(--tl-undertow-400);
+  --danger-text:    var(--tl-undertow-200);  /* use for error body copy (AA contrast) */
+  --info:           var(--tl-ocean-200);
+  --special:        var(--tl-ink-400);
+}
+
+/* ========== Semantic roles -- light ========== */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:             var(--tl-foam);
+    --bg-surface:     #FFFFFF;
+    --bg-elevated:    var(--tl-sea-salt);
+    --bg-hover:       var(--tl-breeze);
+    --bg-inverse:     var(--tl-trench);
+
+    --border:         var(--tl-fog);
+    --border-subtle:  var(--tl-breeze);
+    --border-strong:  var(--tl-mist);
+
+    --text:           var(--tl-trench);
+    --text-muted:     var(--tl-tide);
+    --text-subtle:    var(--tl-horizon);
+    --text-inverse:   var(--tl-foam);
+
+    --accent:         var(--tl-ocean-500);
+    --accent-intense: var(--tl-tsunami);
+    --accent-soft:    var(--tl-ocean-50);
+
+    --success:        var(--tl-kelp-500);
+    --warning:        var(--tl-sun-700);
+    --danger:         var(--tl-undertow-500);
+    --danger-text:    var(--tl-undertow-700);
+    --info:           var(--tl-ocean-500);
+    --special:        var(--tl-ink-500);
+  }
+}
+
+[data-theme="light"] {
+  --bg:             var(--tl-foam);
+  --bg-surface:     #FFFFFF;
+  --bg-elevated:    var(--tl-sea-salt);
+  --bg-hover:       var(--tl-breeze);
+  --bg-inverse:     var(--tl-trench);
+
+  --border:         var(--tl-fog);
+  --border-subtle:  var(--tl-breeze);
+  --border-strong:  var(--tl-mist);
+
+  --text:           var(--tl-trench);
+  --text-muted:     var(--tl-tide);
+  --text-subtle:    var(--tl-horizon);
+  --text-inverse:   var(--tl-foam);
+
+  --accent:         var(--tl-ocean-500);
+  --accent-intense: var(--tl-tsunami);
+  --accent-soft:    var(--tl-ocean-50);
+
+  --success:        var(--tl-kelp-500);
+  --warning:        var(--tl-sun-700);
+  --danger:         var(--tl-undertow-500);
+  --danger-text:    var(--tl-undertow-700);
+  --info:           var(--tl-ocean-500);
+  --special:        var(--tl-ink-500);
+}
+
+/* ========== Base page ========== */
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-size-base);
+  line-height: var(--tl-leading-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection { background: var(--tl-current); color: var(--tl-foam); }
+
+/* ========== Typography utilities ========== */
+
+/* Serif italic display -- wordmark + hero. Never in product UI. */
+.tl-display {
+  font-family: var(--tl-font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: var(--tl-size-5xl);
+  line-height: var(--tl-leading-display);
+  letter-spacing: var(--tl-tracking-tight);
+  color: var(--text);
+}
+
+.tl-h1 {
+  font-family: var(--tl-font-sans);
+  font-weight: var(--tl-weight-medium);
+  font-size: var(--tl-size-3xl);
+  line-height: var(--tl-leading-heading);
+  letter-spacing: var(--tl-tracking-tight);
+  color: var(--text);
+}
+
+.tl-h2 {
+  font-family: var(--tl-font-sans);
+  font-weight: var(--tl-weight-medium);
+  font-size: var(--tl-size-2xl);
+  line-height: var(--tl-leading-heading);
+  letter-spacing: var(--tl-tracking-snug);
+  color: var(--text);
+}
+
+.tl-h3 {
+  font-family: var(--tl-font-sans);
+  font-weight: var(--tl-weight-medium);
+  font-size: var(--tl-size-xl);
+  line-height: var(--tl-leading-heading);
+  color: var(--text);
+}
+
+.tl-h4 {
+  font-family: var(--tl-font-sans);
+  font-weight: var(--tl-weight-medium);
+  font-size: var(--tl-size-lg);
+  line-height: var(--tl-leading-heading);
+  color: var(--text);
+}
+
+.tl-eyebrow {
+  font-family: var(--tl-font-mono);
+  font-weight: var(--tl-weight-medium);
+  font-size: var(--tl-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tl-tracking-eyebrow);
+  color: var(--accent-intense);
+}
+
+.tl-body {
+  font-family: var(--tl-font-sans);
+  font-weight: var(--tl-weight-regular);
+  font-size: var(--tl-size-base);
+  line-height: var(--tl-leading-body);
+  color: var(--text);
+}
+
+.tl-small {
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-size-sm);
+  line-height: var(--tl-leading-dense);
+  color: var(--text-muted);
+}
+
+.tl-caption {
+  font-family: var(--tl-font-mono);
+  font-size: var(--tl-size-xs);
+  letter-spacing: var(--tl-tracking-wide);
+  color: var(--text-subtle);
+}
+
+.tl-code, code {
+  font-family: var(--tl-font-mono);
+  font-size: 0.92em;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: var(--tl-radius-xs);
+  color: var(--accent-intense);
+}
+
+.tl-quote {
+  font-family: var(--tl-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: var(--tl-size-xl);
+  line-height: var(--tl-leading-heading);
+  color: var(--text);
+  border-left: 2px solid var(--accent-intense);
+  padding-left: var(--tl-space-4);
+}
+
+/* Focus ring: apply to focusable elements via :focus-visible */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--tl-focus-ring);
+}

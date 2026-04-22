@@ -1,0 +1,27 @@
+{{define "mod_card"}}
+<article class="pz-card {{if not .ModIDs}}pz-card--missing{{end}}">
+  <a href="https://steamcommunity.com/sharedfiles/filedetails/?id={{.WorkshopID}}" target="_blank" rel="noopener noreferrer">
+    <img class="pz-card-thumb" src="{{.Thumbnail}}" alt="" loading="lazy">
+  </a>
+  <div class="pz-card-body">
+    <h2 class="pz-card-title">
+      <a href="https://steamcommunity.com/sharedfiles/filedetails/?id={{.WorkshopID}}" target="_blank" rel="noopener noreferrer">{{.Name}}</a>
+    </h2>
+    <div class="pz-ws">workshop {{.WorkshopID}}</div>
+    {{if .ModIDs}}
+    <table class="pz-mod-table">
+      <tbody>
+        {{range .ModIDs}}
+        <tr>
+          <td>{{.ID}}</td>
+          <td>{{template "mod_toggle" (dict "WorkshopID" $.WorkshopID "ID" .ID "Enabled" .Enabled)}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="pz-missing-note">no mod id found in description. cannot be enabled in servertest.ini.</p>
+    {{end}}
+  </div>
+</article>
+{{end}}
