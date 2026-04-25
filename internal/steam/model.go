@@ -27,13 +27,18 @@ type CollectionDetails struct {
 }
 
 // PublishedFileDetails describes one workshop item (a mod, in our case).
+// Description maps to `file_description` (modern IPublishedFileService); the
+// legacy ISteamRemoteStorage name was `description`.
 type PublishedFileDetails struct {
 	PublishedFileID string `json:"publishedfileid"`
 	Result          int    `json:"result"`
 	Title           string `json:"title"`
-	Description     string `json:"description"`
+	Description     string `json:"file_description"`
 	PreviewURL      string `json:"preview_url"`
 }
+
+// OK reports whether Steam returned a successful result for this file.
+func (p PublishedFileDetails) OK() bool { return p.Result == resultOK }
 
 type collectionDetailsResponse struct {
 	Result            int                 `json:"result"`
