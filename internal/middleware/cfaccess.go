@@ -62,3 +62,13 @@ func (s *statusRecorder) WriteHeader(code int) {
 	s.status = code
 	s.ResponseWriter.WriteHeader(code)
 }
+
+// Flush forwards to the underlying writer so SSE handlers can stream
+// through the middleware chain. Method promotion from the embedded
+// http.ResponseWriter interface does not include Flush, so the assertion
+// w.(http.Flusher) inside a wrapped handler fails without this.
+func (s *statusRecorder) Flush() {
+	if f, ok := s.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
