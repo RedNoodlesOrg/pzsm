@@ -44,7 +44,7 @@ func newTestAPI(t *testing.T, iniContent string) (*API, string) {
 	}
 	t.Cleanup(func() { st.Close() })
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	return New(nil, activity.New(st.DB(), log), log, "", iniPath), iniPath
+	return New(nil, nil, activity.New(st.DB(), log), log, "", iniPath), iniPath
 }
 
 func TestHandleGetServerini(t *testing.T) {
@@ -89,7 +89,7 @@ func TestHandleGetServerini(t *testing.T) {
 
 func TestHandleGetServerini_NotConfigured(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	a := New(nil, nil, log, "", "")
+	a := New(nil, nil, nil, log, "", "")
 	rr := httptest.NewRecorder()
 	a.handleGetServerini(rr, httptest.NewRequest(http.MethodGet, "/api/serverini", nil))
 	if rr.Code != http.StatusBadRequest {

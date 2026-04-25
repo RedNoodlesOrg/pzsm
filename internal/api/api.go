@@ -10,11 +10,13 @@ import (
 
 	"github.com/RedNoodlesOrg/pzsm/internal/activity"
 	"github.com/RedNoodlesOrg/pzsm/internal/mods"
+	"github.com/RedNoodlesOrg/pzsm/internal/rcon"
 )
 
 // API owns the JSON endpoints. Construct with New.
 type API struct {
 	mods          *mods.Service
+	rcon          *rcon.Service
 	activity      *activity.Logger
 	log           *slog.Logger
 	collectionID  string
@@ -22,10 +24,12 @@ type API struct {
 }
 
 // New returns a configured API. servertestINI may be empty; apply-mods then
-// surfaces a 400 with a clear message.
-func New(modsSvc *mods.Service, act *activity.Logger, log *slog.Logger, collectionID, servertestINI string) *API {
+// surfaces a 400 with a clear message. rconSvc may be unconfigured; RCON
+// handlers then return 503.
+func New(modsSvc *mods.Service, rconSvc *rcon.Service, act *activity.Logger, log *slog.Logger, collectionID, servertestINI string) *API {
 	return &API{
 		mods:          modsSvc,
+		rcon:          rconSvc,
 		activity:      act,
 		log:           log,
 		collectionID:  collectionID,
@@ -46,6 +50,7 @@ func (a *API) Routes() http.Handler {
 	mux.HandleFunc("POST /api/mods/{ws}/move", a.handleMove)
 	mux.HandleFunc("GET /api/serverini", a.handleGetServerini)
 	mux.HandleFunc("PUT /api/serverini", a.handlePutServerini)
+	mux.HandleFunc("POST /api/rcon/exec", a.handleRCONExec)
 	return mux
 }
 

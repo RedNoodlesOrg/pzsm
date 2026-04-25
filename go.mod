@@ -3,6 +3,7 @@ module github.com/RedNoodlesOrg/pzsm
 go 1.24
 
 require (
+	github.com/gorcon/rcon v1.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.34.4
 )

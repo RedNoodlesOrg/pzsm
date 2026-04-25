@@ -16,6 +16,7 @@ import (
 	"github.com/RedNoodlesOrg/pzsm/internal/config"
 	"github.com/RedNoodlesOrg/pzsm/internal/middleware"
 	"github.com/RedNoodlesOrg/pzsm/internal/mods"
+	"github.com/RedNoodlesOrg/pzsm/internal/rcon"
 	"github.com/RedNoodlesOrg/pzsm/internal/steam"
 	"github.com/RedNoodlesOrg/pzsm/internal/store"
 )
@@ -49,8 +50,9 @@ func run(log *slog.Logger, configPath string) error {
 
 	steamClient := steam.New(steam.WithAPIKey(cfg.SteamWebAPIKey))
 	modsSvc := mods.New(db.DB(), steamClient)
+	rconSvc := rcon.New(cfg.RCONHost, cfg.RCONPort, cfg.RCONPassword, log)
 
-	jsonAPI := api.New(modsSvc, al, log, cfg.SteamCollectionID, cfg.ServertestINI)
+	jsonAPI := api.New(modsSvc, rconSvc, al, log, cfg.SteamCollectionID, cfg.ServertestINI)
 
 	if middleware.DevBypassEnabled && cfg.DevUser != "" {
 		log.Warn("auth bypass active: DEV_USER_EMAIL is set; unauthenticated requests will be attributed to this user",
