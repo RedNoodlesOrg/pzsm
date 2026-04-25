@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -260,5 +261,38 @@ func TestWriteFields_OnlyFirstOccurrence(t *testing.T) {
 	got, _ := os.ReadFile(path)
 	if string(got) != "Key=new\nKey=second\n" {
 		t.Errorf("expected only first occurrence rewritten, got %q", got)
+	}
+}
+
+func inode(t *testing.T, path string) uint64 {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	st, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		t.Skipf("inode probe needs *syscall.Stat_t, got %T", info.Sys())
+	}
+	return st.Ino
+}
+
+func TestWriteInPlace_PreservesInode(t *testing.T) {
+	path := writeFixture(t, fixtureLF)
+	before := inode(t, path)
+
+	want := []byte("Mods=foo\nKey=bar\n")
+	if err := writeInPlace(path, want, 0o644); err != nil {
+		t.Fatalf("writeInPlace: %v", err)
+	}
+	if got := inode(t, path); got != before {
+		t.Errorf("inode changed: %d -> %d", before, got)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("content = %q, want %q", got, want)
 	}
 }

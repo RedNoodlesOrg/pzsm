@@ -5,10 +5,12 @@ package serverini
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 // Entry is one Key=Value setting parsed from the ini, with any `#` comment
@@ -134,7 +136,12 @@ func rewriteLine(line []byte, key, value string) []byte {
 }
 
 // writeAtomic writes data to a sibling temp file and renames it over path so a
-// crash mid-write cannot leave the original truncated.
+// crash mid-write cannot leave the original truncated. If path is the source
+// of an active bind mount (rename returns EBUSY) or sits on a different
+// filesystem from its parent dir (EXDEV), the rename is skipped in favour of
+// an in-place truncate-and-write so the existing inode is preserved -- which
+// is what the bind mount on the container side tracks. The in-place fallback
+// is not crash-atomic.
 func writeAtomic(path string, data []byte, mode os.FileMode) error {
 	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
 	if err != nil {
@@ -156,7 +163,28 @@ func writeAtomic(path string, data []byte, mode os.FileMode) error {
 		return fmt.Errorf("serverini: close temp: %w", err)
 	}
 	if err := os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("serverini: rename: %w", err)
+		if !errors.Is(err, syscall.EBUSY) && !errors.Is(err, syscall.EXDEV) {
+			return fmt.Errorf("serverini: rename: %w", err)
+		}
+		return writeInPlace(path, data, mode)
+	}
+	return nil
+}
+
+// writeInPlace truncates path and overwrites it with data, preserving the
+// inode. Use only as a fallback when rename can't replace path (bind-mount
+// destination or cross-device).
+func writeInPlace(path string, data []byte, mode os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, mode)
+	if err != nil {
+		return fmt.Errorf("serverini: open in-place %s: %w", path, err)
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return fmt.Errorf("serverini: write in-place %s: %w", path, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("serverini: close in-place %s: %w", path, err)
 	}
 	return nil
 }
