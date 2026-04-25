@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -91,7 +92,8 @@ const publishedFileDetailsBatch = 100
 // as a single uint64, but Steam actually requires the legacy indexed form
 // (publishedfileids[0]=…&publishedfileids[1]=…) to batch multiple ids. Calls
 // are chunked because the indexed query string blows past Steam's 8 KB URL
-// limit at ~250 ids.
+// limit at ~250 ids; chunks fan out concurrently to collapse N round-trips
+// into one.
 func (c *Client) GetPublishedFileDetails(ctx context.Context, ids []string) ([]PublishedFileDetails, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -99,23 +101,64 @@ func (c *Client) GetPublishedFileDetails(ctx context.Context, ids []string) ([]P
 	if c.apiKey == "" {
 		return nil, fmt.Errorf("steam: api key not configured")
 	}
-	out := make([]PublishedFileDetails, 0, len(ids))
-	for start := 0; start < len(ids); start += publishedFileDetailsBatch {
-		end := min(start+publishedFileDetailsBatch, len(ids))
-		chunk := ids[start:end]
 
-		q := url.Values{}
-		q.Set("key", c.apiKey)
-		for i, id := range chunk {
-			q.Set(fmt.Sprintf("publishedfileids[%d]", i), id)
-		}
-		var env envelope[publishedFileDetailsResponse]
-		if err := c.get(ctx, "/IPublishedFileService/GetDetails/v1/", q, &env); err != nil {
-			return nil, err
-		}
-		out = append(out, env.Response.PublishedFileDetails...)
+	chunks := chunkIDs(ids, publishedFileDetailsBatch)
+	results := make([][]PublishedFileDetails, len(chunks))
+	errs := make(chan error, len(chunks))
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var wg sync.WaitGroup
+	for i, chunk := range chunks {
+		wg.Add(1)
+		go func(i int, chunk []string) {
+			defer wg.Done()
+			details, err := c.fetchPublishedFileDetailsChunk(ctx, chunk)
+			if err != nil {
+				errs <- err
+				cancel()
+				return
+			}
+			results[i] = details
+		}(i, chunk)
+	}
+	wg.Wait()
+	close(errs)
+	if err := <-errs; err != nil {
+		return nil, err
+	}
+
+	out := make([]PublishedFileDetails, 0, len(ids))
+	for _, r := range results {
+		out = append(out, r...)
 	}
 	return out, nil
+}
+
+func (c *Client) fetchPublishedFileDetailsChunk(ctx context.Context, chunk []string) ([]PublishedFileDetails, error) {
+	q := url.Values{}
+	q.Set("key", c.apiKey)
+	for i, id := range chunk {
+		q.Set(fmt.Sprintf("publishedfileids[%d]", i), id)
+	}
+	var env envelope[publishedFileDetailsResponse]
+	if err := c.get(ctx, "/IPublishedFileService/GetDetails/v1/", q, &env); err != nil {
+		return nil, err
+	}
+	return env.Response.PublishedFileDetails, nil
+}
+
+func chunkIDs(ids []string, size int) [][]string {
+	if size <= 0 {
+		return [][]string{ids}
+	}
+	chunks := make([][]string, 0, (len(ids)+size-1)/size)
+	for start := 0; start < len(ids); start += size {
+		end := min(start+size, len(ids))
+		chunks = append(chunks, ids[start:end])
+	}
+	return chunks
 }
 
 // ExpandCollection recursively resolves a top-level collection to every

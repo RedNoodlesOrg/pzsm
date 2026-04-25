@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // mockSteam serves the captured fixtures from testdata as if it were the real
@@ -128,6 +131,52 @@ func TestClient_GetPublishedFileDetails_RequiresAPIKey(t *testing.T) {
 	_, err := c.GetPublishedFileDetails(context.Background(), []string{"1"})
 	if err == nil {
 		t.Fatal("expected error when api key is missing")
+	}
+}
+
+// TestClient_GetPublishedFileDetails_ChunksRunConcurrently asserts the chunked
+// fan-out actually fans out: with 3 chunks served by a handler that sleeps
+// 100ms, the total wall-clock should be near 100ms (concurrent) not ~300ms
+// (serial). 200ms is the upper bound that catches a regression to serial
+// without flaking on slow CI.
+func TestClient_GetPublishedFileDetails_ChunksRunConcurrently(t *testing.T) {
+	const perRequestDelay = 100 * time.Millisecond
+	var inflight, peak atomic.Int32
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /IPublishedFileService/GetDetails/v1/", func(w http.ResponseWriter, r *http.Request) {
+		n := inflight.Add(1)
+		defer inflight.Add(-1)
+		for {
+			p := peak.Load()
+			if n <= p || peak.CompareAndSwap(p, n) {
+				break
+			}
+		}
+		time.Sleep(perRequestDelay)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"response":{"result":1,"resultcount":0,"publishedfiledetails":[]}}`))
+	})
+	ts := httptest.NewServer(mux)
+	defer ts.Close()
+
+	ids := make([]string, 0, 3*publishedFileDetailsBatch)
+	for i := 0; i < cap(ids); i++ {
+		ids = append(ids, fmt.Sprintf("%d", i+1))
+	}
+
+	c := New(WithBaseURL(ts.URL), WithAPIKey("test"))
+	start := time.Now()
+	if _, err := c.GetPublishedFileDetails(context.Background(), ids); err != nil {
+		t.Fatalf("GetPublishedFileDetails: %v", err)
+	}
+	elapsed := time.Since(start)
+
+	if elapsed >= 2*perRequestDelay {
+		t.Errorf("elapsed %v: chunks appear to be serial (>= 2x per-request delay)", elapsed)
+	}
+	if got := peak.Load(); got < 2 {
+		t.Errorf("peak inflight = %d, want >= 2 (chunks did not overlap)", got)
 	}
 }
 
