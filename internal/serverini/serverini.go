@@ -1,6 +1,6 @@
-// Package serverini rewrites the Mods= and WorkshopItems= lines of a Project
-// Zomboid server ini file, preserving every other byte including original line
-// endings.
+// Package serverini reads and rewrites a Project Zomboid server ini file,
+// preserving every byte not explicitly being changed including original line
+// endings and surrounding comments.
 package serverini
 
 import (
@@ -11,41 +11,109 @@ import (
 	"strings"
 )
 
+// Entry is one Key=Value setting parsed from the ini, with any `#` comment
+// lines that immediately preceded it joined by newlines (with the leading
+// "# " stripped).
+type Entry struct {
+	Key     string
+	Value   string
+	Comment string
+}
+
+// Read parses the ini at path into a flat list of Entry values in file order.
+// Bare comment-only blocks at the end of the file are dropped; lines that are
+// neither comments nor `Key=...` are ignored. The original file is not
+// modified.
+func Read(path string) ([]Entry, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("serverini: read %s: %w", path, err)
+	}
+
+	var entries []Entry
+	var commentBuf []string
+
+	for raw := range bytes.SplitSeq(data, []byte("\n")) {
+		line := strings.TrimRight(string(raw), "\r")
+		trimmed := strings.TrimLeft(line, " \t")
+
+		switch {
+		case trimmed == "":
+			commentBuf = nil
+		case strings.HasPrefix(trimmed, "#"):
+			commentBuf = append(commentBuf, strings.TrimLeft(strings.TrimPrefix(trimmed, "#"), " "))
+		default:
+			eq := strings.IndexByte(trimmed, '=')
+			if eq <= 0 {
+				commentBuf = nil
+				continue
+			}
+			entries = append(entries, Entry{
+				Key:     trimmed[:eq],
+				Value:   trimmed[eq+1:],
+				Comment: strings.Join(commentBuf, "\n"),
+			})
+			commentBuf = nil
+		}
+	}
+	return entries, nil
+}
+
 // UpdateMods atomically replaces the first Mods= and WorkshopItems= lines at
 // path with ;-joined values. Both lines must already exist; leading whitespace
 // on the matched lines is tolerated for detection but dropped in the rewrite
 // (matching the Python reference implementation). CRLF line endings on the
 // rewritten lines are preserved.
 func UpdateMods(path string, enabledModIDs, workshopIDs []string) error {
+	return writeFields(path, map[string]string{
+		"Mods":          strings.Join(enabledModIDs, ";"),
+		"WorkshopItems": strings.Join(workshopIDs, ";"),
+	}, true)
+}
+
+// WriteFields atomically rewrites the first occurrence of each `Key=` line
+// listed in updates with the supplied value. Every other byte in the file is
+// preserved, including line endings and surrounding comments. It returns an
+// error if any key in updates does not appear as a `Key=` line in the file --
+// callers should validate keys against Read before calling.
+func WriteFields(path string, updates map[string]string) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	return writeFields(path, updates, true)
+}
+
+func writeFields(path string, updates map[string]string, requireAll bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("serverini: read %s: %w", path, err)
 	}
 
 	lines := bytes.Split(data, []byte("\n"))
+	found := make(map[string]bool, len(updates))
 
-	modsIdx, workshopIdx := -1, -1
 	for i, line := range lines {
 		trimmed := bytes.TrimLeft(line, " \t")
-		if modsIdx == -1 && bytes.HasPrefix(trimmed, []byte("Mods=")) {
-			modsIdx = i
+		eq := bytes.IndexByte(trimmed, '=')
+		if eq <= 0 {
+			continue
 		}
-		if workshopIdx == -1 && bytes.HasPrefix(trimmed, []byte("WorkshopItems=")) {
-			workshopIdx = i
+		key := string(trimmed[:eq])
+		val, ok := updates[key]
+		if !ok || found[key] {
+			continue
 		}
-		if modsIdx != -1 && workshopIdx != -1 {
-			break
-		}
-	}
-	if modsIdx == -1 {
-		return fmt.Errorf("serverini: %s: missing Mods= line", path)
-	}
-	if workshopIdx == -1 {
-		return fmt.Errorf("serverini: %s: missing WorkshopItems= line", path)
+		lines[i] = rewriteLine(line, key+"=", val)
+		found[key] = true
 	}
 
-	lines[modsIdx] = rewriteLine(lines[modsIdx], "Mods=", strings.Join(enabledModIDs, ";"))
-	lines[workshopIdx] = rewriteLine(lines[workshopIdx], "WorkshopItems=", strings.Join(workshopIDs, ";"))
+	if requireAll {
+		for key := range updates {
+			if !found[key] {
+				return fmt.Errorf("serverini: %s: missing %s= line", path, key)
+			}
+		}
+	}
 
 	info, err := os.Stat(path)
 	if err != nil {
