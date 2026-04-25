@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,10 +12,10 @@ import (
 	"time"
 
 	"github.com/RedNoodlesOrg/pzsm/internal/activity"
+	"github.com/RedNoodlesOrg/pzsm/internal/api"
 	"github.com/RedNoodlesOrg/pzsm/internal/config"
 	"github.com/RedNoodlesOrg/pzsm/internal/middleware"
 	"github.com/RedNoodlesOrg/pzsm/internal/mods"
-	"github.com/RedNoodlesOrg/pzsm/internal/server"
 	"github.com/RedNoodlesOrg/pzsm/internal/steam"
 	"github.com/RedNoodlesOrg/pzsm/internal/store"
 )
@@ -23,14 +24,17 @@ func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(log)
 
-	if err := run(log); err != nil {
+	configPath := flag.String("config", "config.yaml", "path to YAML config file")
+	flag.Parse()
+
+	if err := run(log, *configPath); err != nil {
 		log.Error("fatal", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(log *slog.Logger) error {
-	cfg, err := config.Load()
+func run(log *slog.Logger, configPath string) error {
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		return err
 	}
@@ -43,13 +47,10 @@ func run(log *slog.Logger) error {
 
 	al := activity.New(db.DB(), log)
 
-	steamClient := steam.New()
+	steamClient := steam.New(steam.WithAPIKey(cfg.SteamWebAPIKey))
 	modsSvc := mods.New(db.DB(), steamClient)
 
-	app, err := server.New(modsSvc, al, log, cfg.SteamCollectionID, cfg.ServertestINI)
-	if err != nil {
-		return err
-	}
+	jsonAPI := api.New(modsSvc, al, log, cfg.SteamCollectionID, cfg.ServertestINI)
 
 	if middleware.DevBypassEnabled && cfg.DevUser != "" {
 		log.Warn("auth bypass active: DEV_USER_EMAIL is set; unauthenticated requests will be attributed to this user",
@@ -66,7 +67,7 @@ func run(log *slog.Logger) error {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	mux.Handle("/", authed(app.Routes()))
+	mux.Handle("/api/", authed(jsonAPI.Routes()))
 
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,

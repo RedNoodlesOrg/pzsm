@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -24,8 +23,11 @@ func New(db *sql.DB, log *slog.Logger) *Logger {
 }
 
 // Record persists one activity entry, attributing it to the user carried in ctx.
-// Background actions without an attached user are recorded as "system".
-func (l *Logger) Record(ctx context.Context, action, target string, details map[string]any) error {
+// Background actions without an attached user are recorded as "system". Audit
+// failures are logged at error level rather than returned, since callers cannot
+// meaningfully react to a missing audit row after the user-facing action has
+// already taken effect.
+func (l *Logger) Record(ctx context.Context, action, target string, details map[string]any) {
 	user := identity.User(ctx)
 	if user == "" {
 		user = "system"
@@ -34,21 +36,26 @@ func (l *Logger) Record(ctx context.Context, action, target string, details map[
 	if len(details) > 0 {
 		b, err := json.Marshal(details)
 		if err != nil {
-			return fmt.Errorf("activity: marshal details: %w", err)
+			l.log.ErrorContext(ctx, "activity: marshal details", "action", action, "err", err)
+		} else {
+			detailsJSON = string(b)
 		}
-		detailsJSON = string(b)
 	}
-	_, err := l.db.ExecContext(ctx,
+	if _, err := l.db.ExecContext(ctx,
 		`INSERT INTO activity_log (user_email, action, target, details, created_at) VALUES (?, ?, ?, ?, ?)`,
 		user, action, target, detailsJSON, time.Now().Unix(),
-	)
-	if err != nil {
-		return fmt.Errorf("activity: insert %q: %w", action, err)
+	); err != nil {
+		l.log.ErrorContext(ctx, "activity: insert",
+			slog.String("user", user),
+			slog.String("action", action),
+			slog.String("target", target),
+			slog.Any("err", err),
+		)
+		return
 	}
 	l.log.InfoContext(ctx, "activity",
 		slog.String("user", user),
 		slog.String("action", action),
 		slog.String("target", target),
 	)
-	return nil
 }

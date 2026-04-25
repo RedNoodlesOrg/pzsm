@@ -9,4 +9,4 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/pzsm /pzsm
 EXPOSE 8080
 USER nonroot:nonroot
-ENTRYPOINT ["/pzsm"]
+ENTRYPOINT ["/pzsm", "--config", "/etc/pzsm/config.yaml"]

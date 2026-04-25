@@ -6,28 +6,33 @@ import (
 	"strings"
 )
 
-// Label whitespace must be restricted to horizontal whitespace so a bare
-// `Mod ID:` followed by a newline doesn't let \s* gobble the newline and
-// anchor the capture on the *following* line.
-var modIDRegex = regexp.MustCompile(`(?i)Mod[ \t]?ID:[ \t]*(?:\[/b\][ \t]*)?([^\r\n]*?)(?:\r|\[/hr\]|\n|$)`)
+// Anchored to the start of a line via (?m). The prefix before `Mod ID:` may
+// contain BBCode tags or digit-bearing tokens (`v1.1`, `B41`, `2024-01-01`)
+// but not pure-letter qualifier words, so `OLD MOD ID:` and `make sure to set
+// the same Mod ID:` are rejected while `v1.1 Mod ID: snowiswater` is kept.
+// Also tolerates an optional parenthetical between ID and colon
+// (`Mod ID (b41): X`). Label whitespace stays `[ \t]` so a bare `Mod ID:`
+// followed by `\n` does not gobble the newline.
+var modIDRegex = regexp.MustCompile(
+	`(?im)^[ \t]*(?:(?:\[[^\]]+\]|\S*\d\S*)[ \t]*)*Mod[ \t]?ID(?:[ \t]*\([^)]*\))?[ \t]*:[ \t]*(?:\[/[a-z0-9]+\][ \t]*)*([^\r\n]*?)(?:\r|\[/hr\]|\n|$)`,
+)
 
-// ModID is a PZ in-game mod identifier extracted from a workshop description,
-// paired with the enabled flag we persist per id.
-type ModID struct {
-	ID      string
-	Enabled bool
-}
-
-// ExtractModIDs parses PZ mod IDs from a workshop item description. When
-// exactly one unique id is present it is marked enabled by default, matching
-// PZ's single-mod convention; if there are multiple the caller must enable
-// specific ids explicitly.
-func ExtractModIDs(description string) []ModID {
+// ExtractModIDs parses unique PZ in-game mod identifiers from a workshop item
+// description, deduplicated and sorted by (length, lex). Whether to enable any
+// of them is a persistence concern and lives in the caller.
+func ExtractModIDs(description string) []string {
 	matches := modIDRegex.FindAllStringSubmatch(description, -1)
 	seen := make(map[string]struct{}, len(matches))
 	var unique []string
 	for _, m := range matches {
-		id := strings.TrimSpace(m[1])
+		id := m[1]
+		// Cut at the first `[` so trailing BBCode like `Mod ID: Foo[/b]`
+		// (and inline annotations like `Foo  [b](deprecated)[/b]`) don't
+		// leak into the id.
+		if i := strings.IndexByte(id, '['); i >= 0 {
+			id = id[:i]
+		}
+		id = strings.TrimSpace(id)
 		if id == "" {
 			continue
 		}
@@ -43,13 +48,5 @@ func ExtractModIDs(description string) []ModID {
 		}
 		return unique[i] < unique[j]
 	})
-	if len(unique) == 0 {
-		return nil
-	}
-	defaultEnabled := len(unique) == 1
-	out := make([]ModID, len(unique))
-	for i, id := range unique {
-		out[i] = ModID{ID: id, Enabled: defaultEnabled}
-	}
-	return out
+	return unique
 }

@@ -1,57 +1,68 @@
+// Package config loads runtime configuration from a YAML file.
 package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v3"
 )
 
-// Config holds the runtime configuration loaded from environment variables.
+// Config holds the runtime configuration loaded from the YAML file.
 type Config struct {
-	ListenAddr        string `json:"listen_addr,omitempty"`
-	DatabasePath      string `json:"database_path,omitempty"`
-	PZServerFolder    string `json:"pz_server_folder,omitempty"`
-	ServertestINI     string `json:"servertest_ini,omitempty"`
-	DockerContainer   string `json:"docker_container,omitempty"`
-	DockerSocket      string `json:"docker_socket,omitempty"`
-	RCONHost          string `json:"rcon_host,omitempty"`
-	RCONPort          string `json:"rcon_port,omitempty"`
-	RCONPassword      string `json:"rcon_password,omitempty"`
-	SteamCollectionID string `json:"steam_collection_id,omitempty"`
-	// DevUser, when set, bypasses Cloudflare Access: unauthenticated requests
-	// are treated as this user. Leave unset in production.
-	DevUser string `json:"dev_user,omitempty"`
+	ListenAddr        string `yaml:"listen_addr"`
+	DatabasePath      string `yaml:"database_path"`
+	PZServerFolder    string `yaml:"pz_server_folder"`
+	ServertestINI     string `yaml:"servertest_ini"`
+	DockerContainer   string `yaml:"docker_container"`
+	DockerSocket      string `yaml:"docker_socket"`
+	RCONHost          string `yaml:"rcon_host"`
+	RCONPort          string `yaml:"rcon_port"`
+	RCONPassword      string `yaml:"rcon_password"`
+	SteamCollectionID string `yaml:"steam_collection_id"`
+	SteamWebAPIKey    string `yaml:"steam_web_api_key"`
+	// DevUser is honored only by builds compiled with -tags devbypass; the
+	// default (prod) build drops the bypass branch entirely via dead-code
+	// elimination, so this field has no effect there.
+	DevUser string `yaml:"dev_user_email"`
 }
 
-// Load reads configuration from the environment. Variables required for the
-// current slice are validated; optional ones used by later features are read
-// but not checked.
-func Load() (*Config, error) {
-	cfg := &Config{
-		ListenAddr:        envOr("LISTEN_ADDR", ":8080"),
-		DatabasePath:      os.Getenv("DATABASE_PATH"),
-		PZServerFolder:    os.Getenv("PZ_SERVER_FOLDER"),
-		ServertestINI:     os.Getenv("PZ_SERVERTEST_INI"),
-		DockerContainer:   envOr("DOCKER_CONTAINER", "pzserver"),
-		DockerSocket:      envOr("DOCKER_SOCKET", "unix:///var/run/docker.sock"),
-		RCONHost:          os.Getenv("RCON_HOST"),
-		RCONPort:          envOr("RCON_PORT", "27015"),
-		RCONPassword:      os.Getenv("RCON_PASSWORD"),
-		SteamCollectionID: os.Getenv("STEAM_COLLECTION_ID"),
-		DevUser:           os.Getenv("DEV_USER_EMAIL"),
+// Load reads the YAML file at path, applies defaults, and validates required fields.
+func Load(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("config: read %s: %w", path, err)
 	}
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("config: parse %s: %w", path, err)
+	}
+
+	if cfg.ListenAddr == "" {
+		cfg.ListenAddr = ":8080"
+	}
+	if cfg.DockerContainer == "" {
+		cfg.DockerContainer = "pzserver"
+	}
+	if cfg.DockerSocket == "" {
+		cfg.DockerSocket = "unix:///var/run/docker.sock"
+	}
+	if cfg.RCONPort == "" {
+		cfg.RCONPort = "27015"
+	}
+
 	if cfg.DatabasePath == "" {
-		return nil, errors.New("config: DATABASE_PATH is required")
+		return nil, errors.New("config: database_path is required")
 	}
+	if cfg.SteamWebAPIKey == "" {
+		return nil, errors.New("config: steam_web_api_key is required (get one at https://steamcommunity.com/dev/apikey)")
+	}
+
 	if cfg.ServertestINI == "" && cfg.PZServerFolder != "" {
 		cfg.ServertestINI = filepath.Join(cfg.PZServerFolder, "Server", "servertest.ini")
 	}
-	return cfg, nil
-}
 
-func envOr(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
+	return &cfg, nil
 }
