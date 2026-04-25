@@ -51,6 +51,10 @@ func (a *API) Routes() http.Handler {
 	mux.HandleFunc("GET /api/serverini", a.handleGetServerini)
 	mux.HandleFunc("PUT /api/serverini", a.handlePutServerini)
 	mux.HandleFunc("POST /api/rcon/exec", a.handleRCONExec)
+	mux.HandleFunc("GET /api/rcon/players", a.handleListPlayers)
+	mux.HandleFunc("POST /api/rcon/kick", a.handleKick)
+	mux.HandleFunc("POST /api/rcon/whitelist", a.handleWhitelistAdd)
+	mux.HandleFunc("DELETE /api/rcon/whitelist/{user}", a.handleWhitelistRemove)
 	return mux
 }
 

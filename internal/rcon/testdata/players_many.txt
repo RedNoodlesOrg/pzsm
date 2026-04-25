@@ -1,0 +1,4 @@
+Players connected (3):
+-rj
+-toUser
+-Bjørn
