@@ -1,31 +1,24 @@
-# pzsm configuration. Copy to config.yaml and edit; pass via --config.
+# Copy this file to ./pzsm/config.yaml and fill in REPLACE_ME values.
+# config.yaml is gitignored so secrets stay local.
 
-# HTTP listen address.
 listen_addr: ":8080"
 
-# SQLite database path. Required.
-database_path: ./pzsm.db
+# SQLite path inside the container (matches the named-volume mount).
+database_path: /var/lib/pzsm/pzsm.db
 
-# Top-level Steam Workshop collection id to sync from.
+# Required: Steam Web API key. Get one at https://steamcommunity.com/dev/apikey
+steam_web_api_key: REPLACE_ME
+
+# Optional: workshop collection synced into the mods table.
 steam_collection_id: ""
 
-# Project Zomboid server folder. servertest_ini is derived as
-# {pz_server_folder}/Server/servertest.ini when servertest_ini is empty.
-pz_server_folder: ""
-servertest_ini: ""
+# Path inside the container; the parent dir is bind-mounted from ./
+servertest_ini: /var/lib/pzserver-config/servertest.ini
 
-# Slice 4 (RCON) -- not wired up yet.
-rcon_host: ""
+# RCON / docker fields are aspirational (Slice 4 in pzsm/NEXT.md).
+# Loaded but unused by today's pzsm binary.
+rcon_host: pzserver
 rcon_port: "27015"
 rcon_password: ""
-
-# Docker fallback for restart if RCON fails. Slice 4.
 docker_container: pzserver
 docker_socket: unix:///var/run/docker.sock
-
-# Auth bypass for local development. Honored only in builds compiled with
-# `-tags devbypass`; the default (prod) build drops the bypass branch entirely
-# via dead-code elimination, so this field has no effect there.
-dev_user_email: ""
-
-steam_web_api_key: ""

@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/mods"
+	"github.com/fakeapate/pzsm/internal/mods"
 )
 
 // handleSync runs a Steam collection sync and streams progress to the client

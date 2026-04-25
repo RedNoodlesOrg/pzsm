@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/mods"
+	"github.com/fakeapate/pzsm/internal/mods"
 )
 
 type reorderRequest struct {
@@ -28,6 +28,20 @@ func (a *API) handleReorder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.activity.Record(r.Context(), "mods.reorder", "", map[string]any{"count": len(req.Order)})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) handleResetOrder(w http.ResponseWriter, r *http.Request) {
+	if a.collectionID == "" {
+		writeError(w, r, a.log, http.StatusBadRequest, "steam_collection_id is not configured")
+		return
+	}
+	if err := a.mods.ResetOrderToCollection(r.Context(), a.collectionID); err != nil {
+		a.log.ErrorContext(r.Context(), "api: reset-order", "err", err, "collection", a.collectionID)
+		writeError(w, r, a.log, http.StatusInternalServerError, "reset-order failed: "+err.Error())
+		return
+	}
+	a.activity.Record(r.Context(), "mods.reset-order", a.collectionID, nil)
 	w.WriteHeader(http.StatusNoContent)
 }
 

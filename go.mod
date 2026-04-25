@@ -1,4 +1,4 @@
-module github.com/RedNoodlesOrg/pzsm
+module github.com/fakeapate/pzsm
 
 go 1.24
 

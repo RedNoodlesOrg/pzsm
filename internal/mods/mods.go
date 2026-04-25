@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/steam"
+	"github.com/fakeapate/pzsm/internal/steam"
 )
 
 // ErrNotFound is returned by SetEnabled/Toggle when the mod id doesn't exist.
@@ -374,6 +374,75 @@ func (s *Service) Reorder(ctx context.Context, enabledOrder []string) error {
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("mods: commit reorder: %w", err)
+	}
+	return nil
+}
+
+// ResetOrderToCollection re-expands the Steam collection and rewrites every
+// mod's position to match collection order. Mods present in the DB but no
+// longer in the collection are pushed to the end in their current relative
+// order. Workshop ids in the collection without a DB row are skipped — run
+// Sync first to populate them.
+//
+// Toggle / per-id-enabled state is preserved; only `position` changes.
+func (s *Service) ResetOrderToCollection(ctx context.Context, collectionID string) error {
+	if collectionID == "" {
+		return errors.New("mods: collection id is required")
+	}
+	collectionIDs, err := s.steam.ExpandCollection(ctx, collectionID)
+	if err != nil {
+		return fmt.Errorf("mods: expand collection: %w", err)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("mods: begin reset-order: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	allOrdered, err := queryIDs(ctx, tx, `
+		SELECT workshop_id FROM mods
+		ORDER BY position, name COLLATE NOCASE
+	`)
+	if err != nil {
+		return fmt.Errorf("mods: load existing ids: %w", err)
+	}
+	known := make(map[string]struct{}, len(allOrdered))
+	for _, id := range allOrdered {
+		known[id] = struct{}{}
+	}
+
+	seen := make(map[string]struct{}, len(collectionIDs))
+	full := make([]string, 0, len(allOrdered))
+	for _, id := range collectionIDs {
+		if _, ok := known[id]; !ok {
+			continue
+		}
+		if _, dup := seen[id]; dup {
+			continue
+		}
+		seen[id] = struct{}{}
+		full = append(full, id)
+	}
+	for _, id := range allOrdered {
+		if _, ok := seen[id]; !ok {
+			full = append(full, id)
+		}
+	}
+
+	stmt, err := tx.PrepareContext(ctx, `UPDATE mods SET position = ? WHERE workshop_id = ?`)
+	if err != nil {
+		return fmt.Errorf("mods: prepare update: %w", err)
+	}
+	defer stmt.Close()
+
+	for i, id := range full {
+		if _, err := stmt.ExecContext(ctx, i+1, id); err != nil {
+			return fmt.Errorf("mods: update %s: %w", id, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("mods: commit reset-order: %w", err)
 	}
 	return nil
 }

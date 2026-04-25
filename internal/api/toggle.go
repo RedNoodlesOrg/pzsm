@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/mods"
+	"github.com/fakeapate/pzsm/internal/mods"
 )
 
 type toggleResponse struct {

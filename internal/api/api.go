@@ -8,9 +8,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/activity"
-	"github.com/RedNoodlesOrg/pzsm/internal/mods"
-	"github.com/RedNoodlesOrg/pzsm/internal/rcon"
+	"github.com/fakeapate/pzsm/internal/activity"
+	"github.com/fakeapate/pzsm/internal/mods"
+	"github.com/fakeapate/pzsm/internal/rcon"
 )
 
 // API owns the JSON endpoints. Construct with New.
@@ -47,6 +47,7 @@ func (a *API) Routes() http.Handler {
 	mux.HandleFunc("POST /api/mods/{ws}/ids/{mid}/toggle", a.handleToggle)
 	mux.HandleFunc("POST /api/mods/apply", a.handleApply)
 	mux.HandleFunc("POST /api/mods/reorder", a.handleReorder)
+	mux.HandleFunc("POST /api/mods/reset-order", a.handleResetOrder)
 	mux.HandleFunc("POST /api/mods/{ws}/move", a.handleMove)
 	mux.HandleFunc("GET /api/serverini", a.handleGetServerini)
 	mux.HandleFunc("PUT /api/serverini", a.handlePutServerini)

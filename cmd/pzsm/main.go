@@ -11,14 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/activity"
-	"github.com/RedNoodlesOrg/pzsm/internal/api"
-	"github.com/RedNoodlesOrg/pzsm/internal/config"
-	"github.com/RedNoodlesOrg/pzsm/internal/middleware"
-	"github.com/RedNoodlesOrg/pzsm/internal/mods"
-	"github.com/RedNoodlesOrg/pzsm/internal/rcon"
-	"github.com/RedNoodlesOrg/pzsm/internal/steam"
-	"github.com/RedNoodlesOrg/pzsm/internal/store"
+	"github.com/fakeapate/pzsm/internal/activity"
+	"github.com/fakeapate/pzsm/internal/api"
+	"github.com/fakeapate/pzsm/internal/config"
+	"github.com/fakeapate/pzsm/internal/middleware"
+	"github.com/fakeapate/pzsm/internal/mods"
+	"github.com/fakeapate/pzsm/internal/rcon"
+	"github.com/fakeapate/pzsm/internal/steam"
+	"github.com/fakeapate/pzsm/internal/store"
 )
 
 func main() {

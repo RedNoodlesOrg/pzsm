@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/activity"
-	"github.com/RedNoodlesOrg/pzsm/internal/store"
+	"github.com/fakeapate/pzsm/internal/activity"
+	"github.com/fakeapate/pzsm/internal/store"
 )
 
 const serveriniFixture = "# Players can hurt and kill other players\n" +

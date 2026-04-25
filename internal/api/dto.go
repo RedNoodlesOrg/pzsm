@@ -1,6 +1,6 @@
 package api
 
-import "github.com/RedNoodlesOrg/pzsm/internal/mods"
+import "github.com/fakeapate/pzsm/internal/mods"
 
 // modDTO is the wire shape of one mod. Decoupled from mods.Mod so the
 // storage/service model can evolve without breaking the API contract.

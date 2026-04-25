@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/serverini"
+	"github.com/fakeapate/pzsm/internal/serverini"
 )
 
 type applyResponse struct {

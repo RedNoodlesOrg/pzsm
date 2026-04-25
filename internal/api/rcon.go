@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/RedNoodlesOrg/pzsm/internal/rcon"
+	"github.com/fakeapate/pzsm/internal/rcon"
 )
 
 // rconExecBlocklist holds commands that the generic passthrough refuses.
