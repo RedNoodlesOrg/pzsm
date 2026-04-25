@@ -1,0 +1,28 @@
+# Build artifacts
+/pzsm
+*.broken
+
+# Runtime data — never bake into images
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+config.yaml
+servertest.ini
+
+# Dev / IDE
+.git
+.gitignore
+.claude
+.vscode
+.idea
+
+# Reference data only consumed at `go generate` time, not at build time
+pdocs
+
+# Plans / docs not needed in the image
+NEXT.md
+*.md
+
+# Test artifacts
+*_test.go.bak
