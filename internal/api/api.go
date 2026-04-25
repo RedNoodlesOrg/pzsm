@@ -55,6 +55,11 @@ func (a *API) Routes() http.Handler {
 	mux.HandleFunc("POST /api/rcon/kick", a.handleKick)
 	mux.HandleFunc("POST /api/rcon/whitelist", a.handleWhitelistAdd)
 	mux.HandleFunc("DELETE /api/rcon/whitelist/{user}", a.handleWhitelistRemove)
+	mux.HandleFunc("POST /api/rcon/save", a.handleSave)
+	mux.HandleFunc("POST /api/rcon/quit", a.handleQuit)
+	mux.HandleFunc("POST /api/rcon/servermsg", a.handleServerMsg)
+	mux.HandleFunc("POST /api/rcon/serverini/reload", a.handleReloadOptions)
+	mux.HandleFunc("POST /api/rcon/lua/reload", a.handleReloadLua)
 	return mux
 }
 

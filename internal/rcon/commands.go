@@ -50,6 +50,39 @@ func (s *Service) WhitelistRemove(ctx context.Context, user string) (string, err
 	return s.Exec(ctx, cmd)
 }
 
+// Save runs `save`.
+func (s *Service) Save(ctx context.Context) (string, error) {
+	return s.Exec(ctx, "save")
+}
+
+// Quit runs `quit` (saves world and stops the server).
+func (s *Service) Quit(ctx context.Context) (string, error) {
+	return s.Exec(ctx, "quit")
+}
+
+// ServerMsg broadcasts a chat message to all connected players.
+func (s *Service) ServerMsg(ctx context.Context, message string) (string, error) {
+	cmd, err := build("servermsg", message)
+	if err != nil {
+		return "", err
+	}
+	return s.Exec(ctx, cmd)
+}
+
+// ReloadOptions reloads servertest.ini from disk.
+func (s *Service) ReloadOptions(ctx context.Context) (string, error) {
+	return s.Exec(ctx, "reloadoptions")
+}
+
+// ReloadLua reloads a Lua script on the server by filename.
+func (s *Service) ReloadLua(ctx context.Context, filename string) (string, error) {
+	cmd, err := build("reloadlua", filename)
+	if err != nil {
+		return "", err
+	}
+	return s.Exec(ctx, cmd)
+}
+
 func build(verb string, args ...string) (string, error) {
 	var b strings.Builder
 	b.WriteString(verb)
