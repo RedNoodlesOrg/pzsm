@@ -1,0 +1,31 @@
+# pzsm configuration. Copy to config.yaml and edit; pass via --config.
+
+# HTTP listen address.
+listen_addr: ":8080"
+
+# SQLite database path. Required.
+database_path: ./pzsm.db
+
+# Top-level Steam Workshop collection id to sync from.
+steam_collection_id: ""
+
+# Project Zomboid server folder. servertest_ini is derived as
+# {pz_server_folder}/Server/servertest.ini when servertest_ini is empty.
+pz_server_folder: ""
+servertest_ini: ""
+
+# Slice 4 (RCON) -- not wired up yet.
+rcon_host: ""
+rcon_port: "27015"
+rcon_password: ""
+
+# Docker fallback for restart if RCON fails. Slice 4.
+docker_container: pzserver
+docker_socket: unix:///var/run/docker.sock
+
+# Auth bypass for local development. Honored only in builds compiled with
+# `-tags devbypass`; the default (prod) build drops the bypass branch entirely
+# via dead-code elimination, so this field has no effect there.
+dev_user_email: ""
+
+steam_web_api_key: ""
