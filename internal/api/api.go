@@ -1,6 +1,4 @@
 // Package api serves the JSON HTTP surface under /api consumed by the SPA.
-// It coexists with the server-rendered HTMX handlers in internal/server for
-// as long as the legacy UI is still mounted.
 package api
 
 import (
@@ -37,8 +35,7 @@ func New(modsSvc *mods.Service, rconSvc *rcon.Service, act *activity.Logger, log
 	}
 }
 
-// Routes returns the /api/* handler. Mount it behind CFAccess + RequestLog
-// middleware exactly like the HTML handler.
+// Routes returns the /api/* handler. Mount it behind CFAccess + RequestLog middleware.
 func (a *API) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/mods", a.handleListMods)

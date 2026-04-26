@@ -38,7 +38,7 @@ type Mod struct {
 	Name       string    `json:"name,omitempty"`
 	Thumbnail  string    `json:"thumbnail,omitempty"`
 	UpdatedAt  time.Time `json:"updated_at,omitempty"`
-	ModIDs     []ModID   `json:"mod_i_ds,omitempty"`
+	ModIDs     []ModID   `json:"mod_ids,omitempty"`
 }
 
 // SyncResult summarises what a Sync call changed.

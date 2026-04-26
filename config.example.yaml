@@ -1,24 +1,38 @@
 # Copy this file to ./pzsm/config.yaml and fill in REPLACE_ME values.
 # config.yaml is gitignored so secrets stay local.
 
+# Address the HTTP server listens on. Default: ":8080"
 listen_addr: ":8080"
 
-# SQLite path inside the container (matches the named-volume mount).
+# Required. SQLite database file path. Created on first run.
+# Inside the container this matches the bind-mount in compose.yaml.
 database_path: /var/lib/pzsm/pzsm.db
 
-# Required: Steam Web API key. Get one at https://steamcommunity.com/dev/apikey
+# Required. Steam Web API key used to fetch workshop mod details.
+# Obtain one at https://steamcommunity.com/dev/apikey
 steam_web_api_key: REPLACE_ME
 
-# Optional: workshop collection synced into the mods table.
-steam_collection_id: ""
+# Required. Steam Workshop collection ID to sync into the mods table.
+# The numeric ID from the collection URL: ?id=<steam_collection_id>
+steam_collection_id: REPLACE_ME
 
-# Path inside the container; the parent dir is bind-mounted from ./
+# Path to servertest.ini inside the container.
+# If omitted, derived automatically from pz_server_folder (see below).
 servertest_ini: /var/lib/pzserver-config/servertest.ini
 
-# RCON / docker fields are aspirational (Slice 4 in pzsm/NEXT.md).
-# Loaded but unused by today's pzsm binary.
+# Optional alternative to servertest_ini. When set, servertest_ini is
+# derived as <pz_server_folder>/Server/servertest.ini. Leave both blank
+# to disable ini editing (the mods and config pages return 400).
+pz_server_folder: ""
+
+# RCON connection parameters. Required for the players, world, console,
+# and whitelist pages. Leave rcon_host and rcon_password empty to disable
+# RCON (affected endpoints return 503).
 rcon_host: pzserver
 rcon_port: "27015"
 rcon_password: ""
+
+# Docker socket and container name used for server lifecycle commands.
+# Default values match the service name in compose.yaml.
 docker_container: pzserver
 docker_socket: unix:///var/run/docker.sock
