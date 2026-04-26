@@ -8,7 +8,7 @@ Behind Cloudflare Access in prod; local auth bypass via `dev_user_email` in the 
 ## Done
 
 - **Slice 1 -- foundation.** YAML-driven config; SQLite store with embedded migrations; CF Access middleware (email from `Cf-Access-Authenticated-User-Email`, rejects unauth with 401); activity logger writing to both `log/slog` and the DB; structured request logging per authed route; graceful shutdown; distroless Dockerfile.
-- **Slice 2 -- Steam.** Steam client (`GetCollectionDetails`, `GetPublishedFileDetails`, recursive `ExpandCollection`); `mods.Service` with `Sync` / `List` / `Toggle` (atomic via `RETURNING`).
+- **Slice 2 -- Steam.** Steam client (`GetCollectionDetails`, `GetPublishedFileDetails`, recursive `ExpandCollection`); `mods.Service` with `Sync` / `List` / `Toggle` (atomic via `RETURNING`). `Sync` reconciles both directions: ids in the collection are upserted, rows whose workshop_id is no longer in the expansion are deleted (cascading `mod_ids`); skipped if expansion returns zero ids so a transient empty response can't wipe the table.
 - **Modern Steam API for file details.** `GetPublishedFileDetails` switched from the legacy `ISteamRemoteStorage` endpoint to `IPublishedFileService/GetDetails/v1/` (GET, key required). The legacy endpoint masked unlisted / non-default-visibility items as `result=9`; the modern one returns them. Two real mods in the live collection (`2906936402` Fluffy Hair, `2688809268` TCCacheMP) were previously silently dropped and now sync correctly. `description` json tag now reads `file_description`. Collection expansion still uses the legacy endpoint -- no key needed and it works.
 - **Slice 3 -- `servertest.ini` writer.** `internal/serverini.UpdateMods(path, enabledModIDs, workshopIDs)` rewrites just the first `Mods=` and `WorkshopItems=` lines with `;`-joined values; every other line preserved byte-for-byte including CRLF; atomic write via temp file + rename, original mode preserved. Config key: `servertest_ini`, defaults to `{pz_server_folder}/Server/servertest.ini`. Seven serverini tests cover round-trip, CRLF preservation, empty lists, missing-line errors, leading whitespace, and missing file.
 - **Auth bypass gated by build tag.** `dev_user_email` fallback lives behind `//go:build devbypass`; default builds constant-fold the branch out via `middleware.DevBypassEnabled = false`. Dockerfile builds without the tag.
@@ -64,8 +64,7 @@ Steam fixtures are real responses for collection `3707778024`. Regenerate if the
 
 ## Gaps / deferred
 
-- No integration test for `mods.Service.Sync` end-to-end against in-memory SQLite. Client is covered; the upsert loop is not. The SSE handler in `internal/api/sync.go` has no test either.
-- Mods removed from the Steam collection stay in the DB (matches Python behaviour so toggle state survives). Add `last_seen_at` on `mods` if prune is wanted.
+- No integration test for `mods.Service.Sync` end-to-end against in-memory SQLite. Client is covered; the upsert loop is not. `pruneMissing` is tested directly. The SSE handler in `internal/api/sync.go` has no test either.
 - `ExtractModIDs` still captures trailing prose punctuation when a creator writes `Mod ID: X)` mid-sentence at line start. Not seen in the current `3707778024` fixture; the prior `3632610172` (TrueMoozic) case is fixed for the inline-prose-mention shape but `Mod ID: X)` at line start would still keep `X)`.
 - `serverini.UpdateMods` has no end-to-end handler test; the package-level tests cover the file-rewrite logic only.
 - Per-workshop ordering only -- mod ids within a single workshop still sort by `(length, mod_id)`. Revisit if any mod publishes multiple conflict-relevant ids.

@@ -254,6 +254,77 @@ func TestListByPosition_FollowsPosition(t *testing.T) {
 	}
 }
 
+func TestPruneMissing_DeletesAbsentAndCascades(t *testing.T) {
+	db := newTestDB(t)
+	seed(t, db, "A", true, 1)
+	seed(t, db, "B", false, 2)
+	seed(t, db, "C", true, 3)
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+
+	n, err := pruneMissing(context.Background(), tx, []string{"A", "C"})
+	if err != nil {
+		t.Fatalf("pruneMissing: %v", err)
+	}
+	if n != 1 {
+		t.Errorf("removed = %d, want 1", n)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+
+	got := positions(t, db)
+	if _, ok := got["B"]; ok {
+		t.Errorf("expected B to be deleted, still present at position %d", got["B"])
+	}
+	if _, ok := got["A"]; !ok {
+		t.Errorf("A was deleted, want kept")
+	}
+	if _, ok := got["C"]; !ok {
+		t.Errorf("C was deleted, want kept")
+	}
+
+	var idCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM mod_ids WHERE workshop_id = 'B'`).Scan(&idCount); err != nil {
+		t.Fatalf("count mod_ids: %v", err)
+	}
+	if idCount != 0 {
+		t.Errorf("mod_ids for B = %d, want 0 (FK cascade)", idCount)
+	}
+}
+
+func TestPruneMissing_EmptyKeepIsNoop(t *testing.T) {
+	db := newTestDB(t)
+	seed(t, db, "A", true, 1)
+	seed(t, db, "B", true, 2)
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+
+	n, err := pruneMissing(context.Background(), tx, nil)
+	if err != nil {
+		t.Fatalf("pruneMissing: %v", err)
+	}
+	if n != 0 {
+		t.Errorf("removed = %d, want 0", n)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+
+	got := positions(t, db)
+	if len(got) != 2 {
+		t.Errorf("len(mods) = %d, want 2 (empty keep must not wipe table)", len(got))
+	}
+}
+
 func equal(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/fakeapate/pzsm/internal/steam"
@@ -47,6 +48,7 @@ type SyncResult struct {
 	NewMods     int `json:"new_mods"`
 	UpdatedMods int `json:"updated_mods"`
 	NewModIDs   int `json:"new_mod_ids"`
+	RemovedMods int `json:"removed_mods"`
 }
 
 // SyncStage identifies which phase of Sync a SyncEvent came from.
@@ -70,12 +72,15 @@ type SyncEvent struct {
 	Name    string    `json:"name,omitempty"`
 }
 
-// Sync fetches the given collection from Steam and upserts its mods into the
-// database. Existing per-id enabled flags are preserved. Mods removed from the
-// Steam collection are kept in the DB so their toggle state survives until
-// explicitly deleted. If progress is non-nil, Sync sends SyncEvent frames on it
-// as it works; the caller owns the channel and is responsible for draining it.
-// Sync does not close the channel.
+// Sync fetches the given collection from Steam and reconciles the database
+// against it: workshop ids in the collection are upserted (existing per-id
+// enabled flags preserved), and any mod row whose workshop_id is not in the
+// collection is deleted, cascading its mod_ids. As a guard against transient
+// Steam responses, the prune step is skipped when the expansion returns zero
+// ids — emptying the table requires a non-empty collection that genuinely
+// contains none of the current rows. If progress is non-nil, Sync sends
+// SyncEvent frames on it as it works; the caller owns the channel and is
+// responsible for draining it. Sync does not close the channel.
 func (s *Service) Sync(ctx context.Context, collectionID string, progress chan<- SyncEvent) (SyncResult, error) {
 	if collectionID == "" {
 		return SyncResult{}, errors.New("mods: collection id is empty")
@@ -173,10 +178,43 @@ func (s *Service) Sync(ctx context.Context, collectionID string, progress chan<-
 		}
 	}
 
+	removed, err := pruneMissing(ctx, tx, ids)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	result.RemovedMods = removed
+
 	if err := tx.Commit(); err != nil {
 		return SyncResult{}, fmt.Errorf("mods: commit: %w", err)
 	}
 	return result, nil
+}
+
+// pruneMissing deletes any mod whose workshop_id is not in keepIDs, returning
+// the number of rows removed. mod_ids cascade via the FK. Empty keepIDs is a
+// no-op so a transient empty collection response can't wipe the table.
+func pruneMissing(ctx context.Context, tx *sql.Tx, keepIDs []string) (int, error) {
+	if len(keepIDs) == 0 {
+		return 0, nil
+	}
+	placeholders := strings.Repeat("?,", len(keepIDs))
+	placeholders = placeholders[:len(placeholders)-1]
+	args := make([]any, len(keepIDs))
+	for i, id := range keepIDs {
+		args[i] = id
+	}
+	res, err := tx.ExecContext(ctx,
+		fmt.Sprintf(`DELETE FROM mods WHERE workshop_id NOT IN (%s)`, placeholders),
+		args...,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("mods: prune: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("mods: prune rows affected: %w", err)
+	}
+	return int(n), nil
 }
 
 // List returns every mod in the DB along with its mod ids, ordered for display.

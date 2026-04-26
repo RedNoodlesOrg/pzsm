@@ -66,6 +66,7 @@ func (a *API) handleSync(w http.ResponseWriter, r *http.Request) {
 		"new_mods":     result.NewMods,
 		"updated_mods": result.UpdatedMods,
 		"new_mod_ids":  result.NewModIDs,
+		"removed_mods": result.RemovedMods,
 	})
 	_ = writeSSE(w, "done", result)
 	flusher.Flush()
